@@ -27,7 +27,7 @@ def get_price(ticker, c):
     else:
         url = u + ticker
         
-    print(url)
+    #print(url)
     response = rqs.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
     
@@ -40,9 +40,6 @@ def get_price(ticker, c):
 stocks['Updated_Price'] = stocks.apply(lambda x: get_price(x['Ticker'], x['Currency']), axis=1)
 
 stocks.set_index('Stock Name', inplace=True)
-
-print(sheet['A1'].value) # .value is needed to actually return the value in the cell
-print(sheet.cell(row=2,column=1).value)
 
 cp_indx = list(df.columns).index('Current_Price') + 1 # Get column index of for 'Current Price'
 
