@@ -33,7 +33,17 @@ def get_data(ticker, c, info):
             if pr(text=re.compile('Div. Frequency:')):
                 freq = pr.strong.text
         return freq
-
+    
+    if info == 'div':
+        for pr in soup.find_all('div', {'class':'dq-card'}):
+            if pr(text=re.compile('Dividend')):
+                div_ = pr.strong.text.split()[0]
+                try:
+                    div_ = float(div_)
+                except:
+                    pass
+        return div_
+           
 
 if __name__ == "__main__":
 
@@ -49,6 +59,7 @@ if __name__ == "__main__":
     
     stocks['Updated_Price'] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'price'), axis=1)
     stocks['Div_Freq'] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'div_freq'), axis=1)
+    stocks['Dividend'] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'div'), axis=1)
     
     stocks.set_index('Stock Name', inplace=True)
     
@@ -62,6 +73,7 @@ if __name__ == "__main__":
         if rowName in df['Stock Name'].values:
             sheet.cell(row=rn,column=cp_indx).value = stocks.at[rowName,'Updated_Price']
             sheet.cell(row=rn,column=divFreq_indx).value = stocks.at[rowName,'Div_Freq']
+            sheet.cell(row=rn,column=div_indx).value = stocks.at[rowName,'Dividend']
     
     wb.save('Stock_Analysis.xlsx')
     
