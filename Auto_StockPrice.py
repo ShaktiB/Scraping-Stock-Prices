@@ -50,6 +50,7 @@ if __name__ == "__main__":
     wb = load_workbook(filename = 'Stock_Analysis.xlsx')
     #wb = load_workbook(filename = 'Stock_Analysis.xlsx', data_only=True)
     df = pd.read_excel('Stock_Analysis.xlsx', keep_default_na=False)
+    df.columns = df.columns.str.strip()
     
     stocks = df.loc[:,['Stock Name','Ticker','Currency']]
     stocks['Currency'] = stocks['Currency'].str.lower()
@@ -66,7 +67,7 @@ if __name__ == "__main__":
     # Get Indexes for the columns being updated 
     cp_indx = list(df.columns).index('Current_Price') + 1 # Get column index of for 'Current Price'
     divFreq_indx = list(df.columns).index('Div_Frequency') + 1 # Get column index of for 'Current Price'
-    div_indx = list(df.columns).index('Dividend ') + 1 # Get column index of for 'Current Price'
+    div_indx = list(df.columns).index('Dividend') + 1 # Get column index of for 'Current Price'
     
     for rn in range(2,sheet.max_row+1):
         rowName = sheet.cell(row=rn, column = 1).value
