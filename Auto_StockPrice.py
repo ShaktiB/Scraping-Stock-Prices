@@ -21,48 +21,57 @@ def get_data(ticker, c, info):
     response = rqs.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
     
-    if info == 'price':
-        for pr in soup.find_all('span', {"class" : 'price'}):
-            items = " ".join(pr.text.split())
-            p = re.findall("\d+\.\d+", items)
-            price = float(p[0])
-        return price
+    #if info == 'price':
+    for pr in soup.find_all('span', {"class" : 'price'}):
+        items = " ".join(pr.text.split())
+        p = re.findall("\d+\.\d+", items)
+        price = float(p[0])
+    #return price
     
-    if info == 'div_freq':
-        for pr in soup.find_all('div', {'class':'dq-card'}):
-            if pr(text=re.compile('Div. Frequency:')):
-                freq = pr.strong.text
-        return freq
+    #if info == 'div_freq':
+    for pr in soup.find_all('div', {'class':'dq-card'}):
+        if pr(text=re.compile('Div. Frequency:')):
+            freq = pr.strong.text
+    #return freq
     
-    if info == 'div':
-        for pr in soup.find_all('div', {'class':'dq-card'}):
-            if pr(text=re.compile('Dividend')):
-                div_ = pr.strong.text.split()[0]
-                try:
-                    div_ = float(div_)
-                except:
-                    pass
-        return div_
-           
+    #if info == 'div':
+    for pr in soup.find_all('div', {'class':'dq-card'}):
+        if pr(text=re.compile('Dividend')):
+            div_ = pr.strong.text.split()[0]
+            try:
+                div_ = float(div_)
+            except:
+                pass
+    
+    return [price, div_, freq]
+    
+    
 
 if __name__ == "__main__":
 
     wb = load_workbook(filename = 'Stock_Analysis.xlsx')
     #wb = load_workbook(filename = 'Stock_Analysis.xlsx', data_only=True)
     df = pd.read_excel('Stock_Analysis.xlsx', keep_default_na=False)
+    
+    # Remove whitespaces from column titles and data values
     df.columns = df.columns.str.strip()
+    df['Ticker'] = df['Ticker'].str.strip()
+    df['Currency'] =  df['Currency'].str.strip()
     
     stocks = df.loc[:,['Stock Name','Ticker','Currency']]
     stocks['Currency'] = stocks['Currency'].str.lower()
-    tckrs = list(df['Ticker'])
+    #tckrs = list(df['Ticker'])
     
     sheet = wb.active # takes the first sheet in the workbook
     
-    stocks['Updated_Price'] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'price'), axis=1)
-    stocks['Div_Freq'] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'div_freq'), axis=1)
-    stocks['Dividend'] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'div'), axis=1)
+    # Create new columns for data that will be scraped
+    stocks['Updated_Price'] = ''
+    stocks['Div_Freq'] = ''
+    stocks['Dividend'] = ''
     
-    stocks.set_index('Stock Name', inplace=True)
+    stocks[['Updated_Price','Dividend','Div_Freq']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'price'), axis=1, result_type='expand')
+    
+    stocks.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
     
     # Get Indexes for the columns being updated 
     cp_indx = list(df.columns).index('Current_Price') + 1 # Get column index of for 'Current Price'
@@ -72,7 +81,7 @@ if __name__ == "__main__":
     for rn in range(2,sheet.max_row+1):
         rowName = sheet.cell(row=rn, column = 1).value
         if rowName in df['Stock Name'].values:
-            sheet.cell(row=rn,column=cp_indx).value = stocks.at[rowName,'Updated_Price']
+            sheet.cell(row=rn,column=cp_indx).value = stocks.at[rowName,'Updated_Price'] # Requires stock names to be the row index
             sheet.cell(row=rn,column=divFreq_indx).value = stocks.at[rowName,'Div_Freq']
             sheet.cell(row=rn,column=div_indx).value = stocks.at[rowName,'Dividend']
     
