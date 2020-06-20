@@ -8,8 +8,10 @@ import requests as rqs
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
+import sys
 
-def get_data(ticker, c, info):
+def get_data(ticker, c):
+    
     u = 'https://web.tmxmoney.com/quote.php?qm_symbol='
     
     if c == 'usd': # For US stocks
@@ -21,20 +23,19 @@ def get_data(ticker, c, info):
     response = rqs.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
     
-    #if info == 'price':
+    # Get the Stock/ETF Price
     for pr in soup.find_all('span', {"class" : 'price'}):
         items = " ".join(pr.text.split())
         p = re.findall("\d+\.\d+", items)
         price = float(p[0])
-    #return price
-    
-    #if info == 'div_freq':
+
+    # Get the Dividend Frequency
     for pr in soup.find_all('div', {'class':'dq-card'}):
         if pr(text=re.compile('Div. Frequency:')):
             freq = pr.strong.text
     #return freq
     
-    #if info == 'div':
+    # Get the Dividend
     for pr in soup.find_all('div', {'class':'dq-card'}):
         if pr(text=re.compile('Dividend')):
             div_ = pr.strong.text.split()[0]
@@ -44,23 +45,36 @@ def get_data(ticker, c, info):
                 pass
     
     return [price, div_, freq, url]  
+    
 
 if __name__ == "__main__":
 
-    wb = load_workbook(filename = 'Stock_Analysis.xlsx')
-    #wb = load_workbook(filename = 'Stock_Analysis.xlsx', data_only=True)
-    df = pd.read_excel('Stock_Analysis.xlsx', keep_default_na=False)
+    file_name = 'Stock_Analysis.xlsx'
+    sheet_names = ['Potential_Investments']
+    
+    try:
+        df = pd.read_excel(file_name, sheet_names[0], keep_default_na=False) # Store Potential_Investments sheet in a dataframe
+        wb = load_workbook(filename = file_name)
+    except FileNotFoundError:
+        print(f"No file named '{file_name}' in the directory")
+        sys.exit(0)
+    except:
+        sys.exit(1)
     
     # Remove whitespaces from column titles and data values
     df.columns = df.columns.str.strip()
     df['Ticker'] = df['Ticker'].str.strip()
     df['Currency'] =  df['Currency'].str.strip()
     
+    # Take required columns from the Potential_Investments dataframe
     stocks = df.loc[:,['Stock Name','Ticker','Currency']]
     stocks['Currency'] = stocks['Currency'].str.lower()
+    
     #tckrs = list(df['Ticker'])
     
-    sheet = wb.active # takes the first sheet in the workbook
+    sheets = (wb.sheetnames)
+    
+    pot_inv = wb['Potential_Investments'] # Retrieve the Potential_Investments sheet
     
     # Create new columns for data that will be scraped
     stocks['Updated_Price'] = ''
@@ -68,7 +82,7 @@ if __name__ == "__main__":
     stocks['Dividend'] = ''
     stocks['Link'] = ''
     
-    stocks[['Updated_Price','Dividend','Div_Freq','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'price'), axis=1, result_type='expand')
+    stocks[['Updated_Price','Dividend','Div_Freq','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency']), axis=1, result_type='expand')
     
     stocks.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
     
@@ -78,13 +92,13 @@ if __name__ == "__main__":
     div_indx = list(df.columns).index('Dividend') + 1 # Get column index of for 'Current Price'
     link_indx = list(df.columns).index('Link') + 1 # Get column index of for 'Current Price'
     
-    for rn in range(2,sheet.max_row+1):
-        rowName = sheet.cell(row=rn, column = 1).value
+    for rn in range(2,pot_inv.max_row+1):
+        rowName = pot_inv.cell(row=rn, column = 1).value
         if rowName in df['Stock Name'].values:
-            sheet.cell(row=rn,column=cp_indx).value = stocks.at[rowName,'Updated_Price'] # Requires stock names to be the row index
-            sheet.cell(row=rn,column=divFreq_indx).value = stocks.at[rowName,'Div_Freq']
-            sheet.cell(row=rn,column=div_indx).value = stocks.at[rowName,'Dividend']
-            sheet.cell(row=rn,column=link_indx).value = stocks.at[rowName,'Link']
+            pot_inv.cell(row=rn,column=cp_indx).value = stocks.at[rowName,'Updated_Price'] # Requires stock names to be the row index
+            pot_inv.cell(row=rn,column=divFreq_indx).value = stocks.at[rowName,'Div_Freq']
+            pot_inv.cell(row=rn,column=div_indx).value = stocks.at[rowName,'Dividend']
+            pot_inv.cell(row=rn,column=link_indx).value = stocks.at[rowName,'Link']
     
     wb.save('Stock_Analysis.xlsx')
     
