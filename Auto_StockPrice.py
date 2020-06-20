@@ -29,7 +29,7 @@ def get_data(ticker, c, info):
     
     # Get the Stock/ETF Price
     for pr in soup.find_all('span', {"class" : 'price'}):
-        items = " ".join(pr.text.split())
+        items = " ".join(pr.text.split()).replace(',','')
         p = re.findall("\d+\.\d+", items)
         price = float(p[0])
 
@@ -58,7 +58,7 @@ def get_data(ticker, c, info):
             print("Please pass 'potential' or 'current' to this function")
             sys.exit(0)
     except UnboundLocalError:
-        print("Make sure the ticket symbol is correct: {} ".format(ticker))
+        print("Make sure the Ticker Symbol is correct: {} ".format(ticker))
     except:
         sys.exit(1)
     
