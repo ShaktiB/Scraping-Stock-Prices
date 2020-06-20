@@ -39,10 +39,11 @@ def get_data(ticker, c):
     for pr in soup.find_all('div', {'class':'dq-card'}):
         if pr(text=re.compile('Dividend')):
             div_ = pr.strong.text.split()[0]
+            #div_ = float(div_)
             try:
                 div_ = float(div_)
             except:
-                pass
+                print("No dividend was available for: {}.".format(ticker))
     
     return [price, div_, freq, url]  
     
