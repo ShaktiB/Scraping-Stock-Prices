@@ -49,13 +49,18 @@ def get_data(ticker, c, info):
             except:
                 print("No dividend was available for: {}.".format(ticker))
     
-    if info == 'potential':
-        return [price, freq, div_, url]  
-    elif info == 'current':
-        return [price, url]
-    else:
-        print("Please pass 'potential' or 'current' to this function")
-        sys.exit(0)
+    try:
+        if info == 'potential':
+            return [price, freq, div_, url]  
+        elif info == 'current':
+            return [price, freq, div_, url] 
+        else:
+            print("Please pass 'potential' or 'current' to this function")
+            sys.exit(0)
+    except UnboundLocalError:
+        print("Make sure the ticket symbol is correct: {} ".format(ticker))
+    except:
+        sys.exit(1)
     
 def strip_whitespaces(d):
     d.columns = d.columns.str.strip()
@@ -102,15 +107,18 @@ if __name__ == "__main__":
     ch['Currency'] = ch['Currency'].str.lower()
     
     #sheets = (wb.sheetnames)
-
-    df[['Current_Price','Div_Frequency','Dividend','Link']] = df.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
-    #curr_holdings[['Current_Value','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
+    
+    pot_cols = ['Current_Price', 'Div_Frequency','Dividend','Link']
+    curr_cols = ['Current_Price', 'Div_Frequency','Dividend','Link']
+    
+    df[pot_cols] = df.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
+    ch[curr_cols] = ch.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
     
     df['Stck_Names'] = df['Stock Name']
     df.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
     
-    pot_cols = ['Current_Price', 'Div_Frequency','Dividend','Link']
     pot_col_idxs = get_col_indx(df,pot_cols)
+    curr_col_idxs = get_col_indx(ch, curr_cols)
     
     for rn in range(2,pot_inv_sheet.max_row+1):
         rowName = pot_inv_sheet.cell(row=rn, column = 1).value
