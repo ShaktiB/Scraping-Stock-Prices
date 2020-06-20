@@ -63,6 +63,16 @@ def strip_whitespaces(d):
     d['Currency'] = d['Currency'].str.strip()
     return d
 
+def get_col_indx(d,clms):
+    
+    indexes = []
+    
+    for clm in clms:
+        indexes.append(list(d.columns).index(clm) + 2)
+        
+    return indexes
+    
+
 if __name__ == "__main__":
 
     file_name = 'Stock_Analysis_Personal.xlsx'
@@ -70,7 +80,7 @@ if __name__ == "__main__":
     
     try:
         df = pd.read_excel(file_name, sheet_names[0], keep_default_na=False) # Store Potential_Investments sheet in a dataframe
-        curr_holdings = pd.read_excel(file_name, sheet_names[1], keep_default_na=False) # Store Current_Holdings sheet in a dataframe
+        ch = pd.read_excel(file_name, sheet_names[1], keep_default_na=False) # Store Current_Holdings sheet in a dataframe
         
         wb = load_workbook(filename = file_name)
         
@@ -81,60 +91,34 @@ if __name__ == "__main__":
     except:
         sys.exit(1)
     
+    pot_inv_sheet = wb['Potential_Investments'] # Retrieve the Potential_Investments sheet
+    
     # Remove whitespaces from column titles and data values
-    df = strip_whitespaces(df)
+    
+    df = strip_whitespaces(df) # Potential Investments sheet
     df['Currency'] = df['Currency'].str.lower()
-    # df.columns = df.columns.str.strip()
-    # df['Ticker'] = df['Ticker'].str.strip()
-    # df['Currency'] =  df['Currency'].str.strip()
     
-    curr_holdings = strip_whitespaces(curr_holdings)
-    # curr_holdings.columns = curr_holdings.columns.str.strip()
-    # curr_holdings['Ticker'] = curr_holdings['Ticker'].str.strip()
-    # curr_holdings['Currency'] =  curr_holdings['Currency'].str.strip()
+    ch = strip_whitespaces(ch)
+    ch['Currency'] = ch['Currency'].str.lower()
     
-    # Take required columns from the Potential_Investments sheet
-    #stocks = df.loc[:,['Stock Name','Ticker','Currency']]
-    #stocks['Currency'] = stocks['Currency'].str.lower()
-    
-    # Take required columns from the Current_Holdings sheet
-    ch = curr_holdings.loc[:,['Ticker','Currency']] 
-    ch['Currency'] = curr_holdings['Currency'].str.lower()
-    
-    #tckrs = list(df['Ticker'])
-    
-    sheets = (wb.sheetnames)
-    
-    pot_inv = wb['Potential_Investments'] # Retrieve the Potential_Investments sheet
-    
-    # Create new columns for data that will be scraped
-    # stocks['Updated_Price'] = ''
-    # stocks['Div_Freq'] = ''
-    # stocks['Dividend'] = ''
-    # stocks['Link'] = ''
-    
+    #sheets = (wb.sheetnames)
+
     df[['Current_Price','Div_Frequency','Dividend','Link']] = df.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
     #curr_holdings[['Current_Value','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
     
     df['Stck_Names'] = df['Stock Name']
-    df.set_index('Stock Name', inplace=True)
-    # stocks.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
+    df.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
     
-    # Get Indexes for the columns being updated 
-    # Because the 'Stock Name' column has been made the index, need to + 2 
-    # to refer to the correct column index
-    cp_indx = list(df.columns).index('Current_Price') + 2 # Get column index of for 'Current Price'
-    divFreq_indx = list(df.columns).index('Div_Frequency') + 2 # Get column index of for 'Current Price'
-    div_indx = list(df.columns).index('Dividend') + 2 # Get column index of for 'Current Price'
-    link_indx = list(df.columns).index('Link') + 2 # Get column index of for 'Current Price'
+    pot_cols = ['Current_Price', 'Div_Frequency','Dividend','Link']
+    pot_col_idxs = get_col_indx(df,pot_cols)
     
-    for rn in range(2,pot_inv.max_row+1):
-        rowName = pot_inv.cell(row=rn, column = 1).value
+    for rn in range(2,pot_inv_sheet.max_row+1):
+        rowName = pot_inv_sheet.cell(row=rn, column = 1).value
         if rowName in df['Stck_Names'].values:
-            pot_inv.cell(row=rn,column=cp_indx).value = df.at[rowName,'Current_Price'] # Requires stock names to be the row index
-            pot_inv.cell(row=rn,column=divFreq_indx).value = df.at[rowName,'Div_Frequency']
-            pot_inv.cell(row=rn,column=div_indx).value = df.at[rowName,'Dividend']
-            pot_inv.cell(row=rn,column=link_indx).value = df.at[rowName,'Link']
+            pot_inv_sheet.cell(row=rn,column=pot_col_idxs[0]).value = df.at[rowName,'Current_Price'] # Requires stock names to be the row index
+            pot_inv_sheet.cell(row=rn,column=pot_col_idxs[1]).value = df.at[rowName,'Div_Frequency']
+            pot_inv_sheet.cell(row=rn,column=pot_col_idxs[2]).value = df.at[rowName,'Dividend']
+            pot_inv_sheet.cell(row=rn,column=pot_col_idxs[3]).value = df.at[rowName,'Link']
     
     wb.save(file_name)
     
