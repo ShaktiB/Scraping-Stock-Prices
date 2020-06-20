@@ -12,7 +12,7 @@ import re
 def get_data(ticker, c, info):
     u = 'https://web.tmxmoney.com/quote.php?qm_symbol='
     
-    if c == 'us': # For US stocks
+    if c == 'usd': # For US stocks
        url = u + ticker + ':us' 
     else:
         url = u + ticker
