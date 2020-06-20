@@ -14,11 +14,15 @@ def get_data(ticker, c):
     
     u = 'https://web.tmxmoney.com/quote.php?qm_symbol='
     
+
     if c == 'usd': # For US stocks
        url = u + ticker + ':us' 
-    else:
+    elif c == 'cad':
         url = u + ticker
-        
+    else:
+        print("Make sure the currency is in 'CAD' or 'USD'")
+        sys.exit(0)
+
     #print(url)
     response = rqs.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
@@ -50,15 +54,19 @@ def get_data(ticker, c):
 
 if __name__ == "__main__":
 
-    file_name = 'Stock_Analysis.xlsx'
-    sheet_names = ['Potential_Investments']
+    file_name = 'Stock_Analysis_Personal.xlsx'
+    sheet_names = ['Potential_Investments', 'Current_Holdings']
     
     try:
         df = pd.read_excel(file_name, sheet_names[0], keep_default_na=False) # Store Potential_Investments sheet in a dataframe
+        curr_holdings = pd.read_excel(file_name, sheet_names[1], keep_default_na=False) # Store Current_Holdings sheet in a dataframe
+        
         wb = load_workbook(filename = file_name)
+        
     except FileNotFoundError:
         print(f"No file named '{file_name}' in the directory")
         sys.exit(0)
+        
     except:
         sys.exit(1)
     
@@ -66,6 +74,10 @@ if __name__ == "__main__":
     df.columns = df.columns.str.strip()
     df['Ticker'] = df['Ticker'].str.strip()
     df['Currency'] =  df['Currency'].str.strip()
+    
+    curr_holdings.columns = curr_holdings.columns.str.strip()
+    curr_holdings['Ticker'] = curr_holdings['Ticker'].str.strip()
+    curr_holdings['Currency'] =  curr_holdings['Currency'].str.strip()
     
     # Take required columns from the Potential_Investments dataframe
     stocks = df.loc[:,['Stock Name','Ticker','Currency']]
@@ -101,7 +113,7 @@ if __name__ == "__main__":
             pot_inv.cell(row=rn,column=div_indx).value = stocks.at[rowName,'Dividend']
             pot_inv.cell(row=rn,column=link_indx).value = stocks.at[rowName,'Link']
     
-    wb.save('Stock_Analysis.xlsx')
+    wb.save(file_name)
     
     print("--- %s seconds ---" % (time.time() - start_time))
     #test
