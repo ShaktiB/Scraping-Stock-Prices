@@ -10,7 +10,7 @@ import pandas as pd
 import re
 import sys
 
-def get_data(ticker, c):
+def get_data(ticker, c, info):
     
     u = 'https://web.tmxmoney.com/quote.php?qm_symbol='
     
@@ -49,8 +49,19 @@ def get_data(ticker, c):
             except:
                 print("No dividend was available for: {}.".format(ticker))
     
-    return [price, div_, freq, url]  
+    if info == 'potential':
+        return [price, div_, freq, url]  
+    elif info == 'current':
+        return [price, url]
+    else:
+        print("Please pass 'potential' or 'current' to this function")
+        sys.exit(0)
     
+def strip_whitespaces(d):
+    d.columns = d.columns.str.strip()
+    d['Ticker'] = d['Ticker'].str.strip()
+    d['Currency'] = d['Currency'].str.strip()
+    return d
 
 if __name__ == "__main__":
 
@@ -71,17 +82,25 @@ if __name__ == "__main__":
         sys.exit(1)
     
     # Remove whitespaces from column titles and data values
-    df.columns = df.columns.str.strip()
-    df['Ticker'] = df['Ticker'].str.strip()
-    df['Currency'] =  df['Currency'].str.strip()
+    df = strip_whitespaces(df)
+    # df.columns = df.columns.str.strip()
+    # df['Ticker'] = df['Ticker'].str.strip()
+    # df['Currency'] =  df['Currency'].str.strip()
     
-    curr_holdings.columns = curr_holdings.columns.str.strip()
-    curr_holdings['Ticker'] = curr_holdings['Ticker'].str.strip()
-    curr_holdings['Currency'] =  curr_holdings['Currency'].str.strip()
+    curr_holdings = strip_whitespaces(curr_holdings)
+    # curr_holdings.columns = curr_holdings.columns.str.strip()
+    # curr_holdings['Ticker'] = curr_holdings['Ticker'].str.strip()
+    # curr_holdings['Currency'] =  curr_holdings['Currency'].str.strip()
     
-    # Take required columns from the Potential_Investments dataframe
+    # Take required columns from the Potential_Investments sheet
     stocks = df.loc[:,['Stock Name','Ticker','Currency']]
     stocks['Currency'] = stocks['Currency'].str.lower()
+    
+    # Take required columns from the Current_Holdings sheet
+    ch = curr_holdings.loc[:,['Ticker','Currency']] 
+    ch['Currency'] = stocks['Currency'].str.lower()
+    
+    
     
     #tckrs = list(df['Ticker'])
     
@@ -95,7 +114,8 @@ if __name__ == "__main__":
     stocks['Dividend'] = ''
     stocks['Link'] = ''
     
-    stocks[['Updated_Price','Dividend','Div_Freq','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency']), axis=1, result_type='expand')
+    stocks[['Updated_Price','Dividend','Div_Freq','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
+    ch[['Current_Value','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
     
     stocks.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
     
