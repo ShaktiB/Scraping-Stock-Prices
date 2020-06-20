@@ -76,7 +76,6 @@ def get_col_indx(d,clms):
         indexes.append(list(d.columns).index(clm) + 1)
         
     return indexes
-    
 
 if __name__ == "__main__":
 
@@ -120,6 +119,7 @@ if __name__ == "__main__":
     
     #df['Stck_Names'] = df['Stock Name']
     df.set_index('Ticker', inplace=True) # Need to assign names as index for use later when adding in scraped data
+    ch.set_index('Ticker', inplace=True)
     
     for rn in range(2,pot_inv_sheet.max_row+1):
         rowName = pot_inv_sheet.cell(row=rn, column = 1).value
@@ -128,6 +128,14 @@ if __name__ == "__main__":
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[1]).value = df.at[rowName,'Div_Frequency']
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[2]).value = df.at[rowName,'Dividend']
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[3]).value = df.at[rowName,'Link']
+            
+    for rn in range(2,curr_hold_sheet.max_row+1):
+        rowName = curr_hold_sheet.cell(row=rn, column = 1).value
+        if rowName in set(ch.index.values):
+            curr_hold_sheet.cell(row=rn,column=curr_col_idxs[0]).value = ch.at[rowName,'Current_Price'] # Requires stock names to be the row index
+            curr_hold_sheet.cell(row=rn,column=curr_col_idxs[1]).value = ch.at[rowName,'Div_Frequency']
+            curr_hold_sheet.cell(row=rn,column=curr_col_idxs[2]).value = ch.at[rowName,'Dividend']
+            curr_hold_sheet.cell(row=rn,column=curr_col_idxs[3]).value = ch.at[rowName,'Link']
 
     
     wb.save(file_name)
