@@ -50,7 +50,7 @@ def get_data(ticker, c, info):
                 print("No dividend was available for: {}.".format(ticker))
     
     if info == 'potential':
-        return [price, div_, freq, url]  
+        return [price, freq, div_, url]  
     elif info == 'current':
         return [price, url]
     else:
@@ -83,6 +83,7 @@ if __name__ == "__main__":
     
     # Remove whitespaces from column titles and data values
     df = strip_whitespaces(df)
+    df['Currency'] = df['Currency'].str.lower()
     # df.columns = df.columns.str.strip()
     # df['Ticker'] = df['Ticker'].str.strip()
     # df['Currency'] =  df['Currency'].str.strip()
@@ -93,14 +94,12 @@ if __name__ == "__main__":
     # curr_holdings['Currency'] =  curr_holdings['Currency'].str.strip()
     
     # Take required columns from the Potential_Investments sheet
-    stocks = df.loc[:,['Stock Name','Ticker','Currency']]
-    stocks['Currency'] = stocks['Currency'].str.lower()
+    #stocks = df.loc[:,['Stock Name','Ticker','Currency']]
+    #stocks['Currency'] = stocks['Currency'].str.lower()
     
     # Take required columns from the Current_Holdings sheet
     ch = curr_holdings.loc[:,['Ticker','Currency']] 
-    ch['Currency'] = stocks['Currency'].str.lower()
-    
-    
+    ch['Currency'] = curr_holdings['Currency'].str.lower()
     
     #tckrs = list(df['Ticker'])
     
@@ -109,29 +108,33 @@ if __name__ == "__main__":
     pot_inv = wb['Potential_Investments'] # Retrieve the Potential_Investments sheet
     
     # Create new columns for data that will be scraped
-    stocks['Updated_Price'] = ''
-    stocks['Div_Freq'] = ''
-    stocks['Dividend'] = ''
-    stocks['Link'] = ''
+    # stocks['Updated_Price'] = ''
+    # stocks['Div_Freq'] = ''
+    # stocks['Dividend'] = ''
+    # stocks['Link'] = ''
     
-    stocks[['Updated_Price','Dividend','Div_Freq','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
-    ch[['Current_Value','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
+    df[['Current_Price','Div_Frequency','Dividend','Link']] = df.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
+    #curr_holdings[['Current_Value','Link']] = stocks.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
     
-    stocks.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
+    df['Stck_Names'] = df['Stock Name']
+    df.set_index('Stock Name', inplace=True)
+    # stocks.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
     
     # Get Indexes for the columns being updated 
-    cp_indx = list(df.columns).index('Current_Price') + 1 # Get column index of for 'Current Price'
-    divFreq_indx = list(df.columns).index('Div_Frequency') + 1 # Get column index of for 'Current Price'
-    div_indx = list(df.columns).index('Dividend') + 1 # Get column index of for 'Current Price'
-    link_indx = list(df.columns).index('Link') + 1 # Get column index of for 'Current Price'
+    # Because the 'Stock Name' column has been made the index, need to + 2 
+    # to refer to the correct column index
+    cp_indx = list(df.columns).index('Current_Price') + 2 # Get column index of for 'Current Price'
+    divFreq_indx = list(df.columns).index('Div_Frequency') + 2 # Get column index of for 'Current Price'
+    div_indx = list(df.columns).index('Dividend') + 2 # Get column index of for 'Current Price'
+    link_indx = list(df.columns).index('Link') + 2 # Get column index of for 'Current Price'
     
     for rn in range(2,pot_inv.max_row+1):
         rowName = pot_inv.cell(row=rn, column = 1).value
-        if rowName in df['Stock Name'].values:
-            pot_inv.cell(row=rn,column=cp_indx).value = stocks.at[rowName,'Updated_Price'] # Requires stock names to be the row index
-            pot_inv.cell(row=rn,column=divFreq_indx).value = stocks.at[rowName,'Div_Freq']
-            pot_inv.cell(row=rn,column=div_indx).value = stocks.at[rowName,'Dividend']
-            pot_inv.cell(row=rn,column=link_indx).value = stocks.at[rowName,'Link']
+        if rowName in df['Stck_Names'].values:
+            pot_inv.cell(row=rn,column=cp_indx).value = df.at[rowName,'Current_Price'] # Requires stock names to be the row index
+            pot_inv.cell(row=rn,column=divFreq_indx).value = df.at[rowName,'Div_Frequency']
+            pot_inv.cell(row=rn,column=div_indx).value = df.at[rowName,'Dividend']
+            pot_inv.cell(row=rn,column=link_indx).value = df.at[rowName,'Link']
     
     wb.save(file_name)
     
