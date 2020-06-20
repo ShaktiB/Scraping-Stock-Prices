@@ -73,7 +73,7 @@ def get_col_indx(d,clms):
     indexes = []
     
     for clm in clms:
-        indexes.append(list(d.columns).index(clm) + 2)
+        indexes.append(list(d.columns).index(clm) + 1)
         
     return indexes
     
@@ -97,6 +97,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     pot_inv_sheet = wb['Potential_Investments'] # Retrieve the Potential_Investments sheet
+    curr_hold_sheet = wb['Current_Holdings']
     
     # Remove whitespaces from column titles and data values
     
@@ -111,22 +112,23 @@ if __name__ == "__main__":
     pot_cols = ['Current_Price', 'Div_Frequency','Dividend','Link']
     curr_cols = ['Current_Price', 'Div_Frequency','Dividend','Link']
     
-    df[pot_cols] = df.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
-    ch[curr_cols] = ch.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
-    
-    df['Stck_Names'] = df['Stock Name']
-    df.set_index('Stock Name', inplace=True) # Need to assign names as index for use later when adding in scraped data
-    
     pot_col_idxs = get_col_indx(df,pot_cols)
     curr_col_idxs = get_col_indx(ch, curr_cols)
     
+    df[pot_cols] = df.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'potential'), axis=1, result_type='expand')
+    ch[curr_cols] = ch.apply(lambda x: get_data(x['Ticker'], x['Currency'], 'current'), axis=1, result_type='expand')
+    
+    #df['Stck_Names'] = df['Stock Name']
+    df.set_index('Ticker', inplace=True) # Need to assign names as index for use later when adding in scraped data
+    
     for rn in range(2,pot_inv_sheet.max_row+1):
         rowName = pot_inv_sheet.cell(row=rn, column = 1).value
-        if rowName in df['Stck_Names'].values:
+        if rowName in set(df.index.values):
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[0]).value = df.at[rowName,'Current_Price'] # Requires stock names to be the row index
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[1]).value = df.at[rowName,'Div_Frequency']
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[2]).value = df.at[rowName,'Dividend']
             pot_inv_sheet.cell(row=rn,column=pot_col_idxs[3]).value = df.at[rowName,'Link']
+
     
     wb.save(file_name)
     
