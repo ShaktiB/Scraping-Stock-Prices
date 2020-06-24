@@ -1,5 +1,5 @@
 # Scraping Stock Prices
-This repository contains a small script that gets stocks prices from the TMX website using the ticker. The prices are updated in the original Excel file from which the ticker is retrieved.
+This repository contains a small script that gets **stocks prices**, **dividend** **frequency**, and **dividend** from the TMX website using the ticker. The prices are updated in the original Excel file from which the ticker is retrieved.
 
 ## Setup
 
@@ -13,15 +13,18 @@ Python Version: 3.7.6
 4. requests
 5. pandas
 6. re
+7. sys
 
 ### Requirements
 1. The Excel file and script must be in the same folder
 2. The Excel file must be named 'Stock_Analysis.xlsx'
-3. The Excel file must contain the following columns:
-- 'Stock Name': name of the stocks
-- 'Ticker': the stock symbol (ex: Canadian Tire -> CTC.A)
-- 'Currency': 'CAD' or 'US'
-- 'Current_Price': this can be empty or filed in, the values will be overwritten with new scraped values
+3. The Excel file must contain the following sheets: 'Potential_Investments', 'Current_Holdings'
+4. The sheets must contain the following columns and they must be populated:
+- 'Ticker': Stock symbol (CTC.A, BMO, etc.)
+- 'Currency': 'CAD' or 'USD'
+5. The sheets must contain the following columns but do not need to be populated:'Current_Price', 'Div_Frequency', 'Dividend', 'Link'
+
+**Note**: The Excel file attached in this repo is already formatted to work with this script.
 
 ## How-to Use
 The script can be run from the command line based on your Python configurations or manually run using tools like VSCode, Spyder, etc.
@@ -31,5 +34,3 @@ The script can be run from the command line based on your Python configurations 
 ## Helpful Links
 1. https://automatetheboringstuff.com/2e/chapter13/
 2. https://realpython.com/openpyxl-excel-spreadsheets-python/
-
-git branch test -- testing from home computer
