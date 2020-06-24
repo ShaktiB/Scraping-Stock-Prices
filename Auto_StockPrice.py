@@ -79,7 +79,7 @@ def get_col_indx(d,clms):
 
 if __name__ == "__main__":
 
-    file_name = 'Stock_Analysis_Personal.xlsx'
+    file_name = 'Stock_Analysis.xlsx'
     sheet_names = ['Potential_Investments', 'Current_Holdings']
     
     try:
